@@ -255,7 +255,7 @@ class MLPWithInputSkips(torch.nn.Module):
 
         layers = []
 
-        for layeri in range(n_layers):
+        for layeri in range(n_layers - 1):
             if layeri == 0:
                 dimin = input_dim
                 dimout = hidden_dim
@@ -268,6 +268,8 @@ class MLPWithInputSkips(torch.nn.Module):
 
             linear = torch.nn.Linear(dimin, dimout)
             layers.append(torch.nn.Sequential(linear, torch.nn.ReLU(True)))
+            
+        layers.append(torch.nn.Linear(hidden_dim, output_dim))
 
         self.mlp = torch.nn.ModuleList(layers)
         self._input_skips = set(input_skips)
