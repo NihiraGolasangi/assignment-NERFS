@@ -34,7 +34,7 @@ from dataset import (
     get_nerf_datasets,
     trivial_collate,
 )
-
+from render_functions import render_points
 
 # Model class containing:
 #   1) Implicit volume defining the scene
@@ -98,18 +98,24 @@ def render_images(
 
         # TODO (Q1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
-            pass
+            grid_img = vis_grid(xy_grid, image_size)
+            plt.imsave('images/grid.png', grid_img)
 
         # TODO (Q1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
-            pass
-        
+            rays_img = vis_rays(ray_bundle, image_size)
+            plt.imsave('images/rays.png', rays_img)
+            
+
+
         # TODO (Q1.4): Implement point sampling along rays in sampler.py
-        pass
+        ray_bundle = model.sampler(ray_bundle)
 
         # TODO (Q1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
-            pass
+            sample_pts = ray_bundle.sample_points.view(1, -1, 3)
+            render_points('images/sample_points.png', sample_pts)
+            import sys; sys.exit("Checking sample points")
 
         # TODO (Q1.5): Implement rendering in renderer.py
         out = model(ray_bundle)
@@ -141,7 +147,8 @@ def render(
 ):
     # Create model
     model = Model(cfg)
-    model = model.cuda(); model.eval()
+    # model = model.cpu(); model.eval()
+    model = model.cpu(); model.eval()
 
     # Render spiral
     cameras = create_surround_cameras(3.0, n_poses=20)
@@ -156,7 +163,8 @@ def train(
 ):
     # Create model
     model = Model(cfg)
-    model = model.cuda(); model.train()
+    # model = model.cpu(); model.train()
+    model = model.cpu(); model.train()
 
     # Create dataset 
     train_dataset = dataset_from_config(cfg.data)
@@ -188,8 +196,8 @@ def train(
     for epoch in t_range:
         for iteration, batch in enumerate(train_dataloader):
             image, camera, camera_idx = batch[0].values()
-            image = image.cuda()
-            camera = camera.cuda()
+            image = image.cpu()
+            camera = camera.cpu()
 
             # Sample rays
             xy_grid = get_random_pixels_from_image(cfg.training.batch_size, image_size, camera) # TODO (Q2.1): implement in ray_utils.py
@@ -229,7 +237,7 @@ def train(
 def create_model(cfg):
     # Create model
     model = Model(cfg)
-    model.cuda(); model.train()
+    model.cpu(); model.train()
 
     # Load checkpoints
     optimizer_state_dict = None
@@ -304,8 +312,8 @@ def train_nerf(
 
         for iteration, batch in t_range:
             image, camera, camera_idx = batch[0].values()
-            image = image.cuda().unsqueeze(0)
-            camera = camera.cuda()
+            image = image.cpu().unsqueeze(0)
+            camera = camera.cpu()
 
             # Sample rays
             xy_grid = get_random_pixels_from_image(
